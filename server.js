@@ -29,7 +29,9 @@ const MODEL_MAPPING = {
   'claude-3-opus': 'openai/gpt-oss-120b',
   'claude-3-sonnet': 'openai/gpt-oss-20b',
   'gemini-pro': 'qwen/qwen3-next-80b-a3b-thinking',
-  'gpt-4.5': 'qwen/qwen3-235b-a22b'
+  'gpt-4.5': 'qwen/qwen3-235b-a22b',
+  'o1': 'z-ai/glm5',
+  'o3-mini': 'z-ai/glm4.7'
 };
 
 // Health check endpoint
@@ -92,13 +94,22 @@ app.post('/v1/chat/completions', async (req, res) => {
       }
     }
     
+    // Per-model config overrides
+    const modelOverrides = {
+      'qwen/qwen3-235b-a22b': {
+        temperature: 0.7,
+        extra_body: { chat_template_kwargs: { thinking: false } }
+      }
+    };
+    const overrides = modelOverrides[nimModel] || {};
+
     // Transform OpenAI request to NIM format
     const nimRequest = {
       model: nimModel,
       messages: messages,
-      temperature: temperature || 0.6,
+      temperature: overrides.temperature || temperature || 0.6,
       max_tokens: max_tokens || 9024,
-      extra_body: ENABLE_THINKING_MODE ? { chat_template_kwargs: { thinking: true } } : undefined,
+      extra_body: overrides.extra_body || (ENABLE_THINKING_MODE ? { chat_template_kwargs: { thinking: true } } : undefined),
       stream: stream || false
     };
     
